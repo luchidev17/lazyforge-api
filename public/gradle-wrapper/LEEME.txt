@@ -1,0 +1,14 @@
+====================================================
+               L A Z Y   F O R G E
+====================================================
+¡Gracias por crear tu mod con Lazy Forge!
+
+Para compilar tu mod y obtener el archivo .jar:
+1. Extrae TODO el contenido de este archivo ZIP en una carpeta.
+2. Haz doble clic en "build_mod.exe".
+3. Espera a que termine la compilación. Si no tenés Java 21 instalado,
+   lo descargará automáticamente de forma portable (~200 MB, solo la primera vez).
+4. Cuando termine, se eliminarán los archivos temporales de código
+   fuente y quedará ÚNICAMENTE tu archivo .jar de mod listo para jugar.
+
+¡Que te diviertas!
