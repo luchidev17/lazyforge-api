@@ -62,10 +62,10 @@ app.post('/api/generate-mod', requireToken, async (req, res) => {
       return res.status(400).json({ error: 'modConfig.id y modConfig.name son requeridos' })
     }
 
-    const zipBlob = await generateModZip(items, modConfig, blocks, armors)
+    const result = await generateModZip(items, modConfig, blocks, armors)
 
-    const arrayBuffer = await zipBlob.arrayBuffer()
-    const buffer      = Buffer.from(arrayBuffer)
+    // generateModZip retorna un Buffer (nodebuffer de JSZip), listo para enviar
+    const buffer = Buffer.isBuffer(result) ? result : Buffer.from(result)
 
     res.set({
       'Content-Type':        'application/octet-stream',

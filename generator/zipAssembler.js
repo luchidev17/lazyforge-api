@@ -94,16 +94,16 @@ export async function generateModZip(
   // ── 6. Gradle Wrapper estático (gradlew, gradle-wrapper.jar, etc.) ───────────
   await writeWrapperFiles(zip)
 
-  // ── 7. Generar ZIP interno en memoria ───────────────────────────────────
-  const modZipBlob = await zip.generateAsync({ type: 'blob' })
+  // ── 7. Generar ZIP interno como Buffer (Node.js) ─────────────────────────
+  const modZipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
 
   // ── 8. Construir Self-Extracting EXE ─────────────────────────────────────
-  const exeBlob = await buildModExe(modZipBlob)
+  const exeBuffer = await buildModExe(modZipBuffer)
 
-  // ── 9. Envolver el .exe en un ZIP final y retornar el blob ───────────────
-  // (En el servidor retornamos el blob; el frontend se encarga de descargarlo)
+  // ── 9. Envolver el .exe en un ZIP final y retornar como Buffer ────────────
+  // JSZip en Node.js necesita 'nodebuffer', no 'blob' (tipo browser)
   const outerZip = new JSZip()
-  outerZip.file(`${modConfig.name}.exe`, exeBlob)
-  const outerBlob = await outerZip.generateAsync({ type: 'blob' })
-  return outerBlob
+  outerZip.file(`${modConfig.name}.exe`, exeBuffer)
+  const outerBuffer = await outerZip.generateAsync({ type: 'nodebuffer' })
+  return outerBuffer
 }
