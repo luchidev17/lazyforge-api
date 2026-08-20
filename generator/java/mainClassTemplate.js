@@ -392,20 +392,20 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-\${extraImports}
+${extraImports}
 
-public class \${javaClassName} implements ModInitializer {
-    public static final String MOD_ID = "\${modId}";
+public class ${javaClassName} implements ModInitializer {
+    public static final String MOD_ID = "${modId}";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-\${entityTypeDeclarations ? '\\n' + entityTypeDeclarations + '\\n' : ''}
-\${blockDeclarations ? blockDeclarations + '\\n\\n' : ''}\${itemDeclarations}
-\${tabIconDeclaration ? '\\n' + tabIconDeclaration + '\\n' : ''}
-\${creativeTabBlock}
+${entityTypeDeclarations ? '\n' + entityTypeDeclarations + '\n' : ''}
+${blockDeclarations ? blockDeclarations + '\n\n' : ''}${itemDeclarations}
+${tabIconDeclaration ? '\n' + tabIconDeclaration + '\n' : ''}
+${creativeTabBlock}
 
-\${hasFallingBlocks ? buildFallingBlockInnerClass() : ''}\${buildDamageBlockInnerClasses(blocks)}\${buildBounceAndFallBlockInnerClasses(blocks)}    @Override
+${hasFallingBlocks ? buildFallingBlockInnerClass() : ''}${buildDamageBlockInnerClasses(blocks)}${buildBounceAndFallBlockInnerClasses(blocks)}    @Override
     public void onInitialize() {
-        LOGGER.info("¡Mod de Minecraft Inicializado por Lazy Forge con \${items.length} ítems y \${blocks.length} bloques!");
-\${fuelRegistriesStr}\${lootRegistriesStr}\${worldgenRegistriesStr}    }
+        LOGGER.info("¡Mod de Minecraft Inicializado por Lazy Forge con ${items.length} ítems y ${blocks.length} bloques!");
+${fuelRegistriesStr}${lootRegistriesStr}${worldgenRegistriesStr}    }
 }
 `
 }
