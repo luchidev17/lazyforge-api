@@ -14,6 +14,7 @@ import { toJavaClassName }          from './java/javaHelpers.js'
 import { writeItemResources }       from './resources/itemResources.js'
 import { writeBlockResources }      from './resources/blockResources.js'
 import { addTabTranslation, writeLangFile } from './resources/langBuilder.js'
+import { writeWorldGenResources }   from './resources/worldgenBuilder.js'
 
 // ── Gradle writers ────────────────────────────────────────────────────────────
 import { writeFabricModJson, writeGradleFiles } from './gradle/gradleFiles.js'
@@ -86,6 +87,7 @@ export async function generateModZip(
   writeItemResources(zip, allItems, modConfig, paths, langData)
   writeBlockResources(zip, blocks, modConfig, paths, langData)
   writeLangFile(zip, langData, paths)
+  writeWorldGenResources(zip, blocks, modId)
 
   // ── 5. Archivos de configuración ─────────────────────────────────────────────
   writeFabricModJson(zip, modConfig, javaClassName, needClientEntrypoint, paths)

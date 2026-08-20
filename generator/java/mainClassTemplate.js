@@ -23,6 +23,9 @@ function buildExtraImports(items, blocks) {
     const hasDamage = blocks.some(b => b.dealsDamage)
     const hasFallModifier = blocks.some(b => b.cancelsFallDamage)
     const hasBounceBlock = blocks.some(b => b.hasBounce)
+    const hasFuel = items.some(i => i.isFuel) || blocks.some(b => b.isFuel)
+    const hasLoot = items.some(i => i.lootInjection)
+    const hasOre = blocks.some(b => b.isOre)
 
     return [
         hasBlocks ? 'import net.minecraft.block.Block;' : '',
@@ -55,6 +58,9 @@ function buildExtraImports(items, blocks) {
         (hasFallModifier || hasBounceBlock) && !hasDamage ? 'import net.minecraft.block.BlockState;' : '',
         (hasFallModifier || hasBounceBlock) && !hasDamage ? 'import net.minecraft.util.math.BlockPos;' : '',
         hasBounceBlock ? 'import net.minecraft.world.World;' : '',
+        hasFuel ? 'import net.fabricmc.fabric.api.registry.FuelRegistry;' : '',
+        hasLoot ? 'import net.fabricmc.fabric.api.loot.v3.LootTableEvents;\nimport net.minecraft.loot.LootPool;\nimport net.minecraft.loot.entry.ItemEntry;\nimport net.minecraft.loot.provider.number.ConstantLootNumberProvider;\nimport net.minecraft.loot.LootTables;\nimport net.minecraft.loot.condition.RandomChanceLootCondition;' : '',
+        hasOre ? 'import net.fabricmc.fabric.api.biome.v1.BiomeModifications;\nimport net.fabricmc.fabric.api.biome.v1.BiomeSelectors;\nimport net.minecraft.world.gen.GenerationStep;\nimport net.minecraft.registry.RegistryKey;\nimport net.minecraft.registry.RegistryKeys;' : '',
     ].filter(Boolean).join('\n')
 }
 
@@ -93,7 +99,7 @@ function buildDamageBlockInnerClasses(blocks) {
         public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
             return Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 15.0, 15.0);
         }
-        ${damageCode}
+        \${damageCode}
     }
 `
     }
@@ -118,7 +124,7 @@ function buildDamageBlockInnerClasses(blocks) {
         public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
             return Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 15.0, 15.0);
         }
-        ${damageCode}
+        \${damageCode}
     }
 `
     }
@@ -129,7 +135,7 @@ function buildDamageBlockInnerClasses(blocks) {
         public CustomDamageSlabBlock(Settings settings) {
             super(settings);
         }
-        ${damageCode}
+        \${damageCode}
     }
 `
     }
@@ -140,7 +146,7 @@ function buildDamageBlockInnerClasses(blocks) {
         public CustomDamagePillarBlock(Settings settings) {
             super(settings);
         }
-        ${damageCode}
+        \${damageCode}
     }
 `
     }
@@ -151,7 +157,7 @@ function buildDamageBlockInnerClasses(blocks) {
         public CustomDamageStairsBlock(BlockState baseBlockState, Settings settings) {
             super(baseBlockState, settings);
         }
-        ${damageCode}
+        \${damageCode}
     }
 `
     }
@@ -198,7 +204,7 @@ function buildBounceAndFallBlockInnerClasses(blocks) {
         public float getFallDamageModifier(float fallDistance) {
             return this.fallDamageModifier;
         }
-${bounceLogic}
+\${bounceLogic}
     }
 `
     } else if (hasFallModifier) {
@@ -231,7 +237,7 @@ ${bounceLogic}
             super(settings);
             this.bounceVelocity = bounceVelocity;
         }
-${bounceLogic}
+\${bounceLogic}
     }
 `
     }
@@ -296,6 +302,75 @@ export function buildMainClassSource({
     const extraImports = buildExtraImports(items, blocks)
     const hasFallingBlocks = blocks.some(b => b.hasGravity)
 
+    // Generar código de combustibles
+    let fuelRegistriesStr = ''
+    items.forEach(item => {
+        if (item.isFuel && item.burnTime) {
+            // burnTime viene en segundos, pero Minecraft usa ticks (20 ticks = 1s)
+            fuelRegistriesStr += `        FuelRegistry.INSTANCE.add(${item.id.toUpperCase()}, ${item.burnTime * 20});\n`
+        }
+    })
+    blocks.forEach(block => {
+        if (block.isFuel && block.burnTime) {
+            fuelRegistriesStr += `        FuelRegistry.INSTANCE.add(${block.id.toUpperCase()}, ${block.burnTime * 20});\n`
+        }
+    })
+
+    // Generar inyección de botín (Loot Tables)
+    let lootRegistriesStr = ''
+    const allLootInjectable = [...items].filter(i => i.lootInjection)
+    if (allLootInjectable.length > 0) {
+        lootRegistriesStr += `        LootTableEvents.MODIFY.register((key, tableBuilder, source, registries) -> {\n`
+        
+        // Mapear cada cofre a los ítems que se le inyectan
+        const chestsMap = {}
+        allLootInjectable.forEach(item => {
+            const chests = item.lootChests || ['simple_dungeon']
+            chests.forEach(chest => {
+                // Traducir ids simples de la UI a LootTables de minecraft
+                let vanillaKey = ''
+                if (chest === 'simple_dungeon') vanillaKey = 'LootTables.SIMPLE_DUNGEON_CHEST'
+                else if (chest === 'abandoned_mineshaft') vanillaKey = 'LootTables.ABANDONED_MINESHAFT_CHEST'
+                else if (chest === 'village_weaponsmith') vanillaKey = 'LootTables.VILLAGE_WEAPONSMITH_CHEST'
+                else if (chest === 'nether_bridge') vanillaKey = 'LootTables.NETHER_BRIDGE_CHEST'
+                else if (chest === 'end_city_treasure') vanillaKey = 'LootTables.END_CITY_TREASURE_CHEST'
+                
+                if (vanillaKey) {
+                    if (!chestsMap[vanillaKey]) chestsMap[vanillaKey] = []
+                    chestsMap[vanillaKey].push(item)
+                }
+            })
+        })
+
+        Object.entries(chestsMap).forEach(([vanillaKey, lootItems]) => {
+            lootRegistriesStr += `            if (${vanillaKey}.equals(key)) {\n`
+            lootItems.forEach(item => {
+                const weight = item.lootWeight || 15
+                const chance = item.lootChance || 0.25
+                const varName = item.id.toUpperCase()
+                lootRegistriesStr += `                tableBuilder.pool(LootPool.builder()\n`
+                lootRegistriesStr += `                    .rolls(ConstantLootNumberProvider.create(1))\n`
+                lootRegistriesStr += `                    .conditionally(RandomChanceLootCondition.builder(${chance}F))\n`
+                lootRegistriesStr += `                    .with(ItemEntry.builder(${varName}).weight(${weight}))\n`
+                lootRegistriesStr += `                );\n`
+            })
+            lootRegistriesStr += `            }\n`
+        })
+        lootRegistriesStr += `        });\n`
+    }
+
+    // Generar inyección de WorldGen (Biomas)
+    let worldgenRegistriesStr = ''
+    blocks.forEach(block => {
+        if (block.isOre) {
+            worldgenRegistriesStr += `        BiomeModifications.addFeature(\n`
+            worldgenRegistriesStr += `            BiomeSelectors.foundInOverworld(),\n`
+            worldgenRegistriesStr += `            GenerationStep.Feature.UNDERGROUND_ORES,\n`
+            worldgenRegistriesStr += `            RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "${block.id}_ore"))\n`
+            worldgenRegistriesStr += `        );\n`
+        }
+    })
+
     return `package com.${modId};
 
 import net.fabricmc.api.ModInitializer;
@@ -317,20 +392,20 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-${extraImports}
+\${extraImports}
 
-public class ${javaClassName} implements ModInitializer {
-    public static final String MOD_ID = "${modId}";
+public class \${javaClassName} implements ModInitializer {
+    public static final String MOD_ID = "\${modId}";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-${entityTypeDeclarations ? '\n' + entityTypeDeclarations + '\n' : ''}
-${blockDeclarations ? blockDeclarations + '\n\n' : ''}${itemDeclarations}
-${tabIconDeclaration ? '\n' + tabIconDeclaration + '\n' : ''}
-${creativeTabBlock}
+\${entityTypeDeclarations ? '\\n' + entityTypeDeclarations + '\\n' : ''}
+\${blockDeclarations ? blockDeclarations + '\\n\\n' : ''}\${itemDeclarations}
+\${tabIconDeclaration ? '\\n' + tabIconDeclaration + '\\n' : ''}
+\${creativeTabBlock}
 
-${hasFallingBlocks ? buildFallingBlockInnerClass() : ''}${buildDamageBlockInnerClasses(blocks)}${buildBounceAndFallBlockInnerClasses(blocks)}    @Override
+\${hasFallingBlocks ? buildFallingBlockInnerClass() : ''}\${buildDamageBlockInnerClasses(blocks)}\${buildBounceAndFallBlockInnerClasses(blocks)}    @Override
     public void onInitialize() {
-        LOGGER.info("¡Mod de Minecraft Inicializado por Lazy Forge con ${items.length} ítems y ${blocks.length} bloques!");
-    }
+        LOGGER.info("¡Mod de Minecraft Inicializado por Lazy Forge con \${items.length} ítems y \${blocks.length} bloques!");
+\${fuelRegistriesStr}\${lootRegistriesStr}\${worldgenRegistriesStr}    }
 }
 `
 }
