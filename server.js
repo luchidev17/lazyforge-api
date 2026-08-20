@@ -10,13 +10,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app  = express()
 const PORT = process.env.PORT || 3001
 
-const ALLOWED_ORIGIN   = process.env.ALLOWED_ORIGIN   || 'https://luchidev17.github.io'
+const ALLOWED_ORIGIN   = (process.env.ALLOWED_ORIGIN   || 'https://luchidev17.github.io').replace(/\/$/, '')
 const API_SECRET_TOKEN = process.env.API_SECRET_TOKEN || null
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 // En desarrollo local también se permite localhost para poder probar
 const allowedOrigins = [
   ALLOWED_ORIGIN,
+  'https://luchidev17.github.io', // Asegurar por default sin barra
   'http://localhost:5173',
   'http://localhost:4173',
 ]
