@@ -76,9 +76,9 @@ export function writeWorldGenResources(zip, blocks = [], modId) {
       ],
     }
 
-    // Escribir los archivos en el ZIP del datapack
-    const configuredPath = `data/${modId}/worldgen/configured_feature/${blockId}_ore.json`
-    const placedPath     = `data/${modId}/worldgen/placed_feature/${blockId}_ore.json`
+    // Escribir los archivos en el ZIP del datapack con la ruta de recursos de Fabric
+    const configuredPath = `src/main/resources/data/${modId}/worldgen/configured_feature/${blockId}_ore.json`
+    const placedPath     = `src/main/resources/data/${modId}/worldgen/placed_feature/${blockId}_ore.json`
 
     zip.file(configuredPath, JSON.stringify(configuredFeatureJson, null, 2))
     zip.file(placedPath, JSON.stringify(placedFeatureJson, null, 2))
