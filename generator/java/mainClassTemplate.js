@@ -312,7 +312,7 @@ export function buildMainClassSource({
     })
     blocks.forEach(block => {
         if (block.isFuel && block.burnTime) {
-            fuelRegistriesStr += `        FuelRegistry.INSTANCE.add(${block.id.toUpperCase()}, ${block.burnTime * 20});\n`
+            fuelRegistriesStr += `        FuelRegistry.INSTANCE.add(${block.id.toUpperCase()}_BLOCK, ${block.burnTime * 20});\n`
         }
     })
 
