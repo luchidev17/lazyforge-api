@@ -23,10 +23,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (ej. curl, Postman en dev) solo si no hay token configurado
+    // Permitir requests sin origin (ej. curl, Postman, probes internos de Render, etc.)
     if (!origin) {
-      if (!API_SECRET_TOKEN) return callback(null, true)
-      return callback(new Error('Origin requerido'))
+      return callback(null, true)
     }
     if (allowedOrigins.includes(origin)) return callback(null, true)
     callback(new Error(`CORS: origen no permitido → ${origin}`))
